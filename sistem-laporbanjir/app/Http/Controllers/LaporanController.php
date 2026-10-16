@@ -2,49 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Laporan;
 use Illuminate\Http\Request;
 
 class LaporanController extends Controller
 {
-    // Halaman Form Pelaporan
+    // Menampilkan daftar laporan terbaru di atas
+    public function index()
+    {
+        $daftarLaporan = Laporan::latest()->get();
+        return view('laporan.index', compact('daftarLaporan'));
+    }
+
+    // Menampilkan form laporan
     public function create()
     {
         return view('laporan.form');
     }
 
-    // Proses pengiriman data form via POST -> Konfirmasi
+    // Menyimpan data laporan baru dari form ke MySQL
     public function store(Request $request)
     {
-        $laporan = [
-            'nama_pelapor' => $request->input('nama_pelapor'),
-            'lokasi' => $request->input('lokasi'),
-            'tinggi_air' => $request->input('tinggi_air'),
-        ];
+        // 1. Validasi Input
+        $validated = $request->validate([
+            'nama_pelapor'     => 'required|string|max:255',
+            'lokasi'           => 'required|string|max:255',
+            'tinggi_genangan'  => 'required|numeric|min:1',
+            'tanggal_kejadian' => 'required|date',
+        ]);
 
-        return view('laporan.konfirmasi', compact('laporan'));
-    }
+        // 2. Simpan ke database MySQL
+        Laporan::create($validated);
 
-    // Halaman Daftar Laporan (Array dummy tanpa database)
-    public function index()
-    {
-        $daftarLaporan = [
-            [
-                'nama_pelapor' => 'Ahmad Suhendar',
-                'lokasi' => 'Kecamatan Dayeuhkolot',
-                'tinggi_air' => 25, // Waspada (< 30 cm)
-            ],
-            [
-                'nama_pelapor' => 'Budi Santoso',
-                'lokasi' => 'Kecamatan Baleendah',
-                'tinggi_air' => 50, // Siaga (30 - 70 cm)
-            ],
-            [
-                'nama_pelapor' => 'Siti Aminah',
-                'lokasi' => 'Kecamatan Bojongsoang',
-                'tinggi_air' => 90, // Awas (> 70 cm)
-            ],
-        ];
-
-        return view('laporan.index', compact('daftarLaporan'));
+        // 3. Redirect ke halaman Daftar Laporan membawa flash notification
+        return redirect()->route('laporan.index')->with('success', 'Laporan berhasil dikirim dan tersimpan di sistem!');
     }
 }
